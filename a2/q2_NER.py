@@ -104,8 +104,7 @@ class NERModel(LanguageModel):
 
     feed_dict = {
         <placeholder>: <tensor of values to be passed for placeholder>,
-        ....    losses = tf.get_collection("loss")
-
+        ....
     }
 
 
@@ -198,8 +197,8 @@ class NERModel(LanguageModel):
         b2 = tf.get_variable("b2",[self.config.label_size])
         h2 = tf.matmul(h1, U) + b2
         tf.add_to_collection("loss",tf.nn.l2_loss(U))
-    d2 = tf.nn.dropout(h2, self.dropout_placeholder)
-    output = tf.nn.softmax(d2)
+    output = tf.nn.dropout(h2, self.dropout_placeholder)
+    # output = tf.nn.softmax(d2)
     ### END YOUR CODE
     return output
 
@@ -216,6 +215,7 @@ class NERModel(LanguageModel):
     ### YOUR CODE HERE
     losses = tf.nn.softmax_cross_entropy_with_logits(y, self.labels_placeholder)
     softmaxLoss = tf.reduce_mean(losses)
+    # loss = softmaxLoss
     loss = softmaxLoss + tf.add_n(tf.get_collection("loss")) * (self.config.l2/2)
     ### END YOUR CODE
     return loss
@@ -240,8 +240,7 @@ class NERModel(LanguageModel):
       train_op: The Op for training.
     """
     ### YOUR CODE HERE
-    with tf.device('/gpu:0'):
-        train_op = tf.train.AdamOptimizer(self.config.lr).minimize(loss)
+    train_op = tf.train.AdamOptimizer(self.config.lr).minimize(loss)
     ### END YOUR CODE
     return train_op
 
@@ -358,7 +357,7 @@ def test_NER():
     init = tf.initialize_all_variables()
     saver = tf.train.Saver()
 
-    with tf.Session(config=tf.ConfigProto(log_device_placement=True)) as session:
+    with tf.Session() as session:
       best_val_loss = float('inf')
       best_val_epoch = 0
 
