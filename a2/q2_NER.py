@@ -104,7 +104,8 @@ class NERModel(LanguageModel):
 
     feed_dict = {
         <placeholder>: <tensor of values to be passed for placeholder>,
-        ....
+        ....    losses = tf.get_collection("loss")
+
     }
 
 
@@ -191,12 +192,12 @@ class NERModel(LanguageModel):
         W = tf.get_variable("W",[self.config.window_size * self.config.embed_size, self.config.hidden_size])
         b1 = tf.get_variable("b1",[self.config.hidden_size])
         h1 = tf.tanh(tf.matmul(window,W) + b1)
-        tf.Graph.add_to_collection("loss",tf.nn.l2_loss(W))
+        tf.add_to_collection("loss",tf.nn.l2_loss(W))
     with tf.variable_scope("Softmax", initializer=xavier_weight_init()):
         U = tf.get_variable("U",[self.config.hidden_size, self.config.label_size])
         b2 = tf.get_variable("b2",[self.config.label_size])
         h2 = tf.matmul(h1, U) + b2
-        tf.Graph.add_to_collection("loss",tf.nn.l2_loss(U))
+        tf.add_to_collection("loss",tf.nn.l2_loss(U))
     d2 = tf.nn.dropout(h2, self.dropout_placeholder)
     output = tf.nn.softmax(d2)
     ### END YOUR CODE
@@ -215,7 +216,7 @@ class NERModel(LanguageModel):
     ### YOUR CODE HERE
     losses = tf.nn.softmax_cross_entropy_with_logits(y, self.labels_placeholder)
     softmaxLoss = tf.reduce_mean(losses)
-    loss = softmaxLoss + tf.add_n(tf.Graph.get_collection("loss")) * (self.config.l2/2)
+    loss = softmaxLoss + tf.add_n(tf.get_collection("loss")) * (self.config.l2/2)
     ### END YOUR CODE
     return loss
 
@@ -239,7 +240,8 @@ class NERModel(LanguageModel):
       train_op: The Op for training.
     """
     ### YOUR CODE HERE
-    train_op = tf.train.AdamOptimizer(self.config.lr).minimize(loss)
+    with tf.device('/gpu:0'):
+        train_op = tf.train.AdamOptimizer(self.config.lr).minimize(loss)
     ### END YOUR CODE
     return train_op
 
@@ -356,7 +358,7 @@ def test_NER():
     init = tf.initialize_all_variables()
     saver = tf.train.Saver()
 
-    with tf.Session() as session:
+    with tf.Session(config=tf.ConfigProto(log_device_placement=True)) as session:
       best_val_loss = float('inf')
       best_val_epoch = 0
 
