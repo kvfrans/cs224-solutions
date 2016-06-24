@@ -197,8 +197,9 @@ class NERModel(LanguageModel):
         b2 = tf.get_variable("b2",[self.config.label_size])
         h2 = tf.matmul(h1, U) + b2
         tf.add_to_collection("loss",tf.nn.l2_loss(U))
-    d2 = tf.nn.dropout(h2, self.dropout_placeholder)
-    output = tf.nn.softmax(d2)
+
+    output = tf.nn.dropout(h2, self.dropout_placeholder)
+    # output = tf.nn.softmax(d2)
     ### END YOUR CODE
     return output
 
@@ -215,6 +216,7 @@ class NERModel(LanguageModel):
     ### YOUR CODE HERE
     losses = tf.nn.softmax_cross_entropy_with_logits(y, self.labels_placeholder)
     softmaxLoss = tf.reduce_mean(losses)
+
     loss = softmaxLoss + tf.add_n(tf.get_collection("loss")) * (self.config.l2/2)
     ### END YOUR CODE
     return loss
